@@ -5973,8 +5973,11 @@ static int nand_set_ecc_soft_ops(struct nand_chip *chip)
 		}
 		ecc->calculate = rawnand_sw_bch_calculate;
 		ecc->correct = rawnand_sw_bch_correct;
+#ifndef CONFIG_MTD_NAND_SW_ECC_IWAVE
 		ecc->read_page = nand_read_page_swecc;
+#endif
 		ecc->read_subpage = nand_read_subpage;
+#ifndef CONFIG_MTD_NAND_SW_ECC_IWAVE
 		ecc->write_page = nand_write_page_swecc;
 		if (!ecc->read_page_raw)
 			ecc->read_page_raw = nand_read_page_raw;
@@ -5982,6 +5985,7 @@ static int nand_set_ecc_soft_ops(struct nand_chip *chip)
 			ecc->write_page_raw = nand_write_page_raw;
 		ecc->read_oob = nand_read_oob_std;
 		ecc->write_oob = nand_write_oob_std;
+#endif
 
 		/*
 		 * We can only maximize ECC config when the default layout is
@@ -6311,6 +6315,7 @@ static int nand_scan_tail(struct nand_chip *chip)
 	struct nand_device *base = &chip->base;
 	struct nand_ecc_ctrl *ecc = &chip->ecc;
 	int ret, i;
+	udelay(1000);
 
 	/* New bad blocks should be marked in OOB, flash-based BBT, or both */
 	if (WARN_ON((chip->bbt_options & NAND_BBT_NO_OOB_BBM) &&
@@ -6421,6 +6426,7 @@ static int nand_scan_tail(struct nand_chip *chip)
 
 	case NAND_ECC_ENGINE_TYPE_NONE:
 		pr_warn("NAND_ECC_ENGINE_TYPE_NONE selected by board driver. This is not recommended!\n");
+#ifndef CONFIG_MTD_NAND_RAW_IWAVE
 		ecc->read_page = nand_read_page_raw;
 		ecc->write_page = nand_write_page_raw;
 		ecc->read_oob = nand_read_oob_std;
@@ -6430,6 +6436,7 @@ static int nand_scan_tail(struct nand_chip *chip)
 		ecc->size = mtd->writesize;
 		ecc->bytes = 0;
 		ecc->strength = 0;
+#endif
 		break;
 
 	default:
@@ -6485,6 +6492,7 @@ static int nand_scan_tail(struct nand_chip *chip)
 		ret = -EINVAL;
 		goto err_nand_manuf_cleanup;
 	}
+	udelay(500);
 
 	/*
 	 * The number of bytes available for a client to place data into
@@ -6522,6 +6530,7 @@ static int nand_scan_tail(struct nand_chip *chip)
 	chip->pagecache.page = -1;
 
 	/* Large page NAND with SOFT_ECC should support subpage reads */
+#ifndef CONFIG_MTD_NAND_SW_ECC_IWAVE
 	switch (ecc->engine_type) {
 	case NAND_ECC_ENGINE_TYPE_SOFT:
 		if (chip->page_shift > 9)
@@ -6531,6 +6540,7 @@ static int nand_scan_tail(struct nand_chip *chip)
 	default:
 		break;
 	}
+#endif
 
 	ret = nanddev_init(&chip->base, &rawnand_ops, mtd->owner);
 	if (ret)
@@ -6593,6 +6603,7 @@ static int nand_scan_tail(struct nand_chip *chip)
 	/* Check, if we should skip the bad block table scan */
 	if (chip->options & NAND_SKIP_BBTSCAN)
 		return 0;
+	udelay(500);
 
 	/* Build bad block table */
 	ret = nand_create_bbt(chip);
@@ -6652,14 +6663,17 @@ int nand_scan_with_ids(struct nand_chip *chip, unsigned int maxchips,
 
 	if (!maxchips)
 		return -EINVAL;
+	udelay(500);
 
 	ret = nand_scan_ident(chip, maxchips, ids);
 	if (ret)
 		return ret;
+	udelay(500);
 
 	ret = nand_attach(chip);
 	if (ret)
 		goto cleanup_ident;
+	udelay(500);
 
 	ret = nand_scan_tail(chip);
 	if (ret)
