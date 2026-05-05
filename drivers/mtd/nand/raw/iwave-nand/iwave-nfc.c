@@ -1106,14 +1106,12 @@ static int iwave_nand_probe(struct platform_device *pdev)
  * Return:	0 on success or error value on failure
  */
 
-static int iwave_nand_remove(struct platform_device *pdev)
+static void iwave_nand_remove(struct platform_device *pdev)
 {
 	struct iwave_nand_chip *inand_chip;
 
 	/* Release resources, unregister device */
 	nand_cleanup(&inand_chip->chip);
-
-	return 0;
 }
 
 /* Match table for device tree binding */
