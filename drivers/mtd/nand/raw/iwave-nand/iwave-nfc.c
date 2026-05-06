@@ -164,15 +164,27 @@ static void iwave_nfc_force_byte_access(struct nand_chip *chip,
 static inline int iwave_wait_for_dev_ready(struct iwave_nand_controller *xnfc,
 		struct nand_chip *chip)
 {
+#if 1
+	ktime_t start = ktime_get();
+#else
 	unsigned long timeout = jiffies + IW_NAND_DEV_BUSY_TIMEOUT;
+#endif
 	u32 reg = 0;
 
 	while (!(reg = iwave_smc_get_nand_int_status_raw(xnfc))) {
+#if 1
+		if (ktime_ms_delta(ktime_get(), start) > 500) {
+			pr_debug("%s status(0x%08X)\n", __func__, reg);
+			pr_err("%s timed out\n", __func__);
+			return -ETIMEDOUT;
+		}
+#else
 		if (time_after_eq(jiffies, timeout)) {
 			pr_debug("%s status(0x%08X)\n", __func__, reg);
 			pr_err("%s timed out\n", __func__);
 			return -ETIMEDOUT;
 		}
+#endif
 		cond_resched();
 	}
 
