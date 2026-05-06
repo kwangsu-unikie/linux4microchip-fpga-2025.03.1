@@ -165,9 +165,11 @@ static inline int iwave_wait_for_dev_ready(struct iwave_nand_controller *xnfc,
 		struct nand_chip *chip)
 {
 	unsigned long timeout = jiffies + IW_NAND_DEV_BUSY_TIMEOUT;
+	u32 reg = 0;
 
-	while (!iwave_smc_get_nand_int_status_raw(xnfc)) {
+	while (!(reg = iwave_smc_get_nand_int_status_raw(xnfc))) {
 		if (time_after_eq(jiffies, timeout)) {
+			pr_debug("%s status(0x%08X)\n", __func__, reg);
 			pr_err("%s timed out\n", __func__);
 			return -ETIMEDOUT;
 		}
